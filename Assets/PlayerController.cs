@@ -12,74 +12,90 @@ public class PlayerController : MonoBehaviour
     public float fallMultiplier = 2.5f;
     public float lowJumpMultiplier = 2f;
 
+    [Header("Game Feel Tweaks")]
+    [Tooltip("Grace period (seconds) to jump after walking off a ledge.")]
+    public float coyoteTime = 0.15f;
+    private float coyoteTimeCounter;
+
+    [Tooltip("Time window (seconds) to store a jump press before landing.")]
+    public float jumpBufferTime = 0.15f;
+    private float jumpBufferCounter;
+
     private Rigidbody rb;
     private bool isGrounded;
 
     void Start()
+{
+    rb = GetComponent<Rigidbody>();
+
+    // Automatically locate the main camera transform if unassigned
+    if (cameraTransform == null && Camera.main != null)
     {
-        rb = GetComponent<Rigidbody>();
+        cameraTransform = Camera.main.transform;
     }
+}
 
     void Update()
     {
-        CheckGrounded();
-        HandleJump();
+        // Ground detection raycast
+        isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
+
+        // 1. Coyote Time Logic
+        if (isGrounded)
+        {
+            coyoteTimeCounter = coyoteTime;
+        }
+        else
+        {
+            coyoteTimeCounter -= Time.deltaTime;
+        }
+
+        // 2. Input Buffer Logic
+        if (Input.GetButtonDown("Jump"))
+        {
+            jumpBufferCounter = jumpBufferTime;
+        }
+        else
+        {
+            jumpBufferCounter -= Time.deltaTime;
+        }
+
+        // 3. Trigger Jump when both buffer and coyote time are valid
+        if (jumpBufferCounter > 0f && coyoteTimeCounter > 0f)
+        {
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
+
+            // Reset counters to prevent double-jumping
+            jumpBufferCounter = 0f;
+            coyoteTimeCounter = 0f;
+        }
     }
 
     void FixedUpdate()
     {
-        HandleMovement();
-        ApplyJumpModifiers();
-    }
-
-    void HandleMovement()
-    {
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
-        
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
 
         if (direction.magnitude >= 0.1f)
         {
-            // Calculate movement direction relative to the third-person camera
-            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
+            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + 
+                                (cameraTransform != null ? cameraTransform.eulerAngles.y : 0f);
             Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-            
-            // Apply velocity directly (relies on the ZeroFriction material to prevent snagging)
+
             rb.linearVelocity = new Vector3(moveDir.x * moveSpeed, rb.linearVelocity.y, moveDir.z * moveSpeed);
-            
-            // Instantly snap player rotation to face movement direction
             transform.rotation = Quaternion.Euler(0f, targetAngle, 0f);
         }
         else
         {
-            // Kill horizontal velocity immediately when input stops
             rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
         }
-    }
 
-    void CheckGrounded()
-    {
-        // Shoots a ray exactly from the 1m center point down to slightly past the 1m radius curve
-        isGrounded = Physics.Raycast(transform.position, Vector3.down, 1.1f);
-    }
-
-    void HandleJump()
-    {
-        if (Input.GetButtonDown("Jump") && isGrounded)
-        {
-            rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpForce, rb.linearVelocity.z);
-        }
-    }
-
-    void ApplyJumpModifiers()
-    {
-        // Apply extra gravity when falling for a heavier, faster descent
+        // Apply custom gravity multipliers for snappy jump arcs
         if (rb.linearVelocity.y < 0)
         {
             rb.linearVelocity += Vector3.up * Physics.gravity.y * (fallMultiplier - 1) * Time.fixedDeltaTime;
         }
-        // Apply extra gravity if the jump button is released early for variable jump heights
         else if (rb.linearVelocity.y > 0 && !Input.GetButton("Jump"))
         {
             rb.linearVelocity += Vector3.up * Physics.gravity.y * (lowJumpMultiplier - 1) * Time.fixedDeltaTime;
