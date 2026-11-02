@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 4626597519219607140}
   m_Layer: 0
   m_Name: GoalZone
-  m_TagString: Untagged
+  m_TagString: Finish
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -67,7 +67,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 3200ee6cfa7abfc439026b11d4096821, type: 2}
+  - {fileID: 2100000, guid: ef64789ffc40f3749a63526d7200844d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

@@ -46,6 +46,10 @@ PrefabInstance:
       value: Wall (2)
       objectReference: {fileID: 0}
     - target: {fileID: 8215798624212467970, guid: 131ceab04ead68c4fb0ba8bf78eb4000, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8215798624212467970, guid: 131ceab04ead68c4fb0ba8bf78eb4000, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -106,6 +110,10 @@ PrefabInstance:
     - target: {fileID: 7501069297165403009, guid: 131ceab04ead68c4fb0ba8bf78eb4000, type: 3}
       propertyPath: m_Name
       value: Wall
+      objectReference: {fileID: 0}
+    - target: {fileID: 8215798624212467970, guid: 131ceab04ead68c4fb0ba8bf78eb4000, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 8215798624212467970, guid: 131ceab04ead68c4fb0ba8bf78eb4000, type: 3}
       propertyPath: m_LocalPosition.x
