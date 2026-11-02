@@ -335,6 +335,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Wall (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 7501069297165403009, guid: 131ceab04ead68c4fb0ba8bf78eb4000, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8215798624212467970, guid: 131ceab04ead68c4fb0ba8bf78eb4000, type: 3}
       propertyPath: m_LocalScale.z
       value: 37.998997
@@ -795,7 +799,7 @@ MonoBehaviour:
   m_Center: {x: 0, y: 2, z: 0}
   m_LayerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 71
   m_UseGeometry: 0
   m_DefaultArea: 0
   m_GenerateLinks: 0
@@ -816,8 +820,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 704963651}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.07504027, y: 0.8937557, z: -0.41136557, w: 0.16232139}
-  m_LocalPosition: {x: -9.660403, y: 19.593208, z: 288.87866}
+  m_LocalRotation: {x: 0.2818136, y: 0.06147311, z: -0.016941037, w: 0.95734805}
+  m_LocalPosition: {x: -3.437645, y: 6.520687, z: 233.11702}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

@@ -177,7 +177,7 @@ AudioListener:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 53877574}
-  m_Enabled: 1
+  m_Enabled: 0
 --- !u!20 &53877576
 Camera:
   m_ObjectHideFlags: 0
@@ -493,9 +493,13 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -6113866686826509346, guid: 9158e426682f49b42a7a67158eb7adba, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -3593085685262677700, guid: 9158e426682f49b42a7a67158eb7adba, type: 3}
       propertyPath: chaseSpeed
-      value: 6.5
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: -3593085685262677700, guid: 9158e426682f49b42a7a67158eb7adba, type: 3}
       propertyPath: patrolSpeed
@@ -556,6 +560,10 @@ PrefabInstance:
     - target: {fileID: 1328591090333992781, guid: 9158e426682f49b42a7a67158eb7adba, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1990085390624380028, guid: 9158e426682f49b42a7a67158eb7adba, type: 3}
+      propertyPath: m_IsKinematic
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5422135461967854662, guid: 9158e426682f49b42a7a67158eb7adba, type: 3}
       propertyPath: m_Name
@@ -8326,9 +8334,13 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -6113866686826509346, guid: 9158e426682f49b42a7a67158eb7adba, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -3593085685262677700, guid: 9158e426682f49b42a7a67158eb7adba, type: 3}
       propertyPath: chaseSpeed
-      value: 6.5
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: -3593085685262677700, guid: 9158e426682f49b42a7a67158eb7adba, type: 3}
       propertyPath: patrolSpeed
@@ -13165,6 +13177,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1328591090333992781, guid: 0d6844cb78cebb641933f127cdd1d97d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3779553543144618721, guid: 0d6844cb78cebb641933f127cdd1d97d, type: 3}
+      propertyPath: shielded
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5422135461967854662, guid: 0d6844cb78cebb641933f127cdd1d97d, type: 3}
