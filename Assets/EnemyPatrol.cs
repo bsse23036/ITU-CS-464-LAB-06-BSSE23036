@@ -1,209 +1,393 @@
+
 using UnityEngine;
 
-public enum PatrolMode { Loop, PingPong, Random }
+public enum PatrolMode
+{
+    Loop,
+    PingPong,
+    Random
+}
 
-// Custom non-NavMesh Enemy Patrol with FOV detection and player chase behavior
+[RequireComponent(typeof(Rigidbody))]
 public class EnemyPatrol : MonoBehaviour
 {
     [Header("Patrol Settings")]
     [SerializeField] private Transform[] points;
     [SerializeField] private PatrolMode mode = PatrolMode.Loop;
-    [SerializeField] private float speed = 3.5f;
-    [SerializeField] private float waitTime = 1.0f;
+
+    [SerializeField] private float patrolSpeed = 3.5f;
+    [SerializeField] private float waitTime = 1f;
+
+    [Header("Movement Settings")]
+    [SerializeField] private float chaseSpeed = 5.5f;
     [SerializeField] private float turnSpeed = 360f;
 
-    [Header("Detection & Stealth Settings")]
-    [SerializeField] private float chaseSpeed = 5.5f;
+    [Header("Detection Settings")]
     [SerializeField] private float detectionRadius = 10f;
-    [Range(0, 360)] [SerializeField] private float fieldOfViewAngle = 90f;
-    [SerializeField] private LayerMask obstacleMask; // Assign cover/wall layers to block vision
 
+    [Range(0f, 360f)]
+    [SerializeField] private float fieldOfViewAngle = 90f;
+
+    [SerializeField] private LayerMask obstacleMask;
+
+    [SerializeField] private float chaseMemoryDuration = 3f;
+
+    [Header("Combat Settings")]
+    [SerializeField] private int damage = 1;
+    [SerializeField] private float damageCooldown = 1f;
+
+    [Header("Optional Reset Settings")]
+    [SerializeField] private bool reloadLevelOnContact = false;
+
+    private Rigidbody rb;
     private Transform player;
-    private int index;
-    private int step = 1;
-    private float waitUntil;
-    private bool isChasing;
 
-    void Start()
+    private int currentPointIndex;
+    private int direction = 1;
+
+    private float waitUntil;
+    private float lastSeenTime;
+    private float nextDamageTime;
+
+    private bool isChasing;
+    private bool hasLastKnownPosition;
+
+    private Vector3 lastKnownPosition;
+
+    private void Awake()
     {
-        // Find player by tag
-        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-        if (playerObj != null)
+        rb = GetComponent<Rigidbody>();
+
+        // Prevent physics from tipping the enemy over.
+        rb.constraints |= RigidbodyConstraints.FreezeRotationX;
+        rb.constraints |= RigidbodyConstraints.FreezeRotationZ;
+
+        // Interpolate movement for smoother visuals.
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
+    }
+
+    private void Start()
+    {
+        GameObject playerObject =
+            GameObject.FindGameObjectWithTag("Player");
+
+        if (playerObject != null)
         {
-            player = playerObj.transform;
+            player = playerObject.transform;
+        }
+        else
+        {
+            Debug.LogWarning(
+                "EnemyPatrol: No GameObject with Player tag found.",
+                this
+            );
+        }
+
+        if (points == null || points.Length == 0)
+        {
+            Debug.LogWarning(
+                "EnemyPatrol: No patrol points assigned.",
+                this
+            );
         }
     }
 
-    void Update()
+    private void Update()
     {
-        // 1. Check if player is within line of sight
-        if (player != null && CanSeePlayer())
+        if (player == null)
+            return;
+
+        if (CanSeePlayer())
         {
             isChasing = true;
+            lastSeenTime = Time.time;
+
+            lastKnownPosition = player.position;
+            hasLastKnownPosition = true;
+        }
+        else if (isChasing &&
+                 Time.time - lastSeenTime > chaseMemoryDuration)
+        {
+            isChasing = false;
+            hasLastKnownPosition = false;
+
+            waitUntil = Time.time;
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (isChasing && hasLastKnownPosition)
+        {
             ChasePlayer();
         }
         else
         {
-            // Resume patrol if player breaks line of sight
-            if (isChasing)
-            {
-                isChasing = false;
-                waitUntil = Time.time; // Continue patrol immediately
-            }
-
             Patrol();
         }
     }
 
+    // ---------------- PATROL ----------------
+
     private void Patrol()
     {
-        if (points == null || points.Length == 0) return;
-        if (Time.time < waitUntil) return;
+        if (points == null || points.Length == 0)
+            return;
 
-        Vector3 target = points[index].position;
-        Vector3 toTarget = target - transform.position;
+        if (currentPointIndex >= points.Length ||
+            points[currentPointIndex] == null)
+            return;
 
-        // Move towards target waypoint
-        transform.position = Vector3.MoveTowards(transform.position, target, speed * Time.deltaTime);
+        if (Time.time < waitUntil)
+            return;
 
-        // Turn towards movement direction
-        if (toTarget != Vector3.zero)
+        Vector3 target = points[currentPointIndex].position;
+
+        // Keep movement on the ground plane.
+        target.y = rb.position.y;
+
+        MoveTowards(target, patrolSpeed);
+
+        if (Vector3.Distance(
+            new Vector3(rb.position.x, 0f, rb.position.z),
+            new Vector3(target.x, 0f, target.z)
+        ) < 0.15f)
         {
-            Quaternion look = Quaternion.LookRotation(toTarget);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, look, turnSpeed * Time.deltaTime);
-        }
-
-        // Check if destination reached
-        if (Vector3.Distance(transform.position, target) < 0.01f)
-        {
-            index = NextIndex();
+            currentPointIndex = GetNextPointIndex();
             waitUntil = Time.time + waitTime;
         }
     }
 
-    private void ChasePlayer()
+    private int GetNextPointIndex()
     {
-        Vector3 target = player.position;
-        Vector3 toTarget = target - transform.position;
+        if (points.Length <= 1)
+            return 0;
 
-        // Direct movement towards player position
-        transform.position = Vector3.MoveTowards(transform.position, target, chaseSpeed * Time.deltaTime);
-
-        // Direct rotation towards player
-        if (toTarget != Vector3.zero)
+        switch (mode)
         {
-            Quaternion look = Quaternion.LookRotation(toTarget);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, look, turnSpeed * Time.deltaTime);
+            case PatrolMode.Loop:
+
+                return (currentPointIndex + 1) % points.Length;
+
+            case PatrolMode.PingPong:
+
+                if (currentPointIndex + direction >= points.Length ||
+                    currentPointIndex + direction < 0)
+                {
+                    direction *= -1;
+                }
+
+                return currentPointIndex + direction;
+
+            case PatrolMode.Random:
+
+                int next = currentPointIndex;
+
+                while (next == currentPointIndex)
+                {
+                    next = Random.Range(0, points.Length);
+                }
+
+                return next;
+
+            default:
+
+                return 0;
         }
     }
+
+    // ---------------- CHASE ----------------
+
+    private void ChasePlayer()
+    {
+        Vector3 target = lastKnownPosition;
+
+        target.y = rb.position.y;
+
+        MoveTowards(target, chaseSpeed);
+
+        if (Vector3.Distance(
+            new Vector3(rb.position.x, 0f, rb.position.z),
+            new Vector3(target.x, 0f, target.z)
+        ) < 0.2f && !CanSeePlayer())
+        {
+            hasLastKnownPosition = false;
+        }
+    }
+
+    // ---------------- MOVEMENT ----------------
+
+    private void MoveTowards(Vector3 target, float speed)
+    {
+        Vector3 directionToTarget = target - rb.position;
+
+        directionToTarget.y = 0f;
+
+        if (directionToTarget.sqrMagnitude < 0.001f)
+            return;
+
+        Vector3 movement = directionToTarget.normalized;
+
+        Vector3 newPosition = Vector3.MoveTowards(
+            rb.position,
+            target,
+            speed * Time.fixedDeltaTime
+        );
+
+        rb.MovePosition(newPosition);
+
+        Quaternion targetRotation = Quaternion.LookRotation(movement);
+
+        Quaternion newRotation = Quaternion.RotateTowards(
+            rb.rotation,
+            targetRotation,
+            turnSpeed * Time.fixedDeltaTime
+        );
+
+        rb.MoveRotation(newRotation);
+    }
+
+    // ---------------- PLAYER DETECTION ----------------
 
     private bool CanSeePlayer()
     {
-        Vector3 dirToPlayer = (player.position - transform.position);
-        float distanceToPlayer = dirToPlayer.magnitude;
+        Vector3 eyePosition = transform.position + Vector3.up * 0.8f;
 
-        // 1. Distance check
-        if (distanceToPlayer <= detectionRadius)
+        Vector3 playerPosition = player.position + Vector3.up * 0.8f;
+
+        Vector3 directionToPlayer = playerPosition - eyePosition;
+
+        // Ignore vertical difference when calculating FOV.
+        Vector3 flatDirection = directionToPlayer;
+        flatDirection.y = 0f;
+
+        float distance = directionToPlayer.magnitude;
+
+        // Check detection distance.
+        if (distance > detectionRadius)
+            return false;
+
+        // Check field of view.
+        float angle = Vector3.Angle(
+            transform.forward,
+            flatDirection.normalized
+        );
+
+        if (angle > fieldOfViewAngle / 2f)
+            return false;
+
+        // Check whether walls or cover block vision.
+        if (Physics.Raycast(
+            eyePosition,
+            directionToPlayer.normalized,
+            distance,
+            obstacleMask,
+            QueryTriggerInteraction.Ignore
+        ))
         {
-            // 2. FOV Angle check
-            float angleToPlayer = Vector3.Angle(transform.forward, dirToPlayer.normalized);
-            if (angleToPlayer <= fieldOfViewAngle / 2f)
-            {
-                // 3. Line of sight Raycast check (checks if obstacles block vision)
-                Vector3 eyePosition = transform.position + Vector3.up * 0.5f;
-                Vector3 playerTargetPos = player.position + Vector3.up * 0.5f;
-                Vector3 rayDir = (playerTargetPos - eyePosition).normalized;
-
-                if (!Physics.Raycast(eyePosition, rayDir, distanceToPlayer, obstacleMask))
-                {
-                    return true; // Line of sight clear
-                }
-            }
+            return false;
         }
-        return false;
+
+        return true;
     }
 
-    private int NextIndex()
-    {
-        if (points == null || points.Length == 0) return 0;
-
-        if (mode == PatrolMode.Loop)
-        {
-            return (index + 1) % points.Length;
-        }
-
-        if (mode == PatrolMode.PingPong)
-        {
-            if (index + step < 0 || index + step >= points.Length)
-            {
-                step = -step;
-            }
-            return Mathf.Clamp(index + step, 0, points.Length - 1);
-        }
-
-        // Random mode
-        int next = Random.Range(0, points.Length);
-        return (next == index && points.Length > 1) ? (next + 1) % points.Length : next;
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            TriggerReset();
-        }
-    }
+    // ---------------- DAMAGE ----------------
 
     private void OnCollisionEnter(Collision collision)
-{
-    if (collision.gameObject.CompareTag("Player"))
     {
-        Health playerHealth = collision.gameObject.GetComponent<Health>();
+        TryDamagePlayer(collision.gameObject);
+    }
+
+    private void OnCollisionStay(Collision collision)
+    {
+        TryDamagePlayer(collision.gameObject);
+    }
+
+    private void TryDamagePlayer(GameObject target)
+    {
+        if (!target.CompareTag("Player"))
+            return;
+
+        if (Time.time < nextDamageTime)
+            return;
+
+        nextDamageTime = Time.time + damageCooldown;
+
+        Health playerHealth = target.GetComponent<Health>();
+
         if (playerHealth != null)
         {
-            playerHealth.TakeDamage(1);
-        }
-    }
-}
+            playerHealth.TakeDamage(damage);
 
-    private void TriggerReset()
-    {
-        if (GameManager.Instance != null)
+            Debug.Log("Enemy damaged the player!");
+        }
+
+        if (reloadLevelOnContact &&
+            GameManager.Instance != null)
         {
             GameManager.Instance.ReloadCurrentLevel();
         }
     }
 
-    // Visualize FOV cone and patrol path in the Scene View
-    private void OnDrawGizmos()
+    // ---------------- GIZMOS ----------------
+
+    private void OnDrawGizmosSelected()
     {
-        // Draw Patrol Path
-        if (points != null && points.Length > 1)
+        // Detection radius.
+        Gizmos.color = Color.red;
+
+        Gizmos.DrawWireSphere(
+            transform.position,
+            detectionRadius
+        );
+
+        // Field of view.
+        Vector3 leftDirection =
+            Quaternion.Euler(0f, -fieldOfViewAngle / 2f, 0f)
+            * transform.forward;
+
+        Vector3 rightDirection =
+            Quaternion.Euler(0f, fieldOfViewAngle / 2f, 0f)
+            * transform.forward;
+
+        Gizmos.color = Color.yellow;
+
+        Gizmos.DrawRay(
+            transform.position,
+            leftDirection * detectionRadius
+        );
+
+        Gizmos.DrawRay(
+            transform.position,
+            rightDirection * detectionRadius
+        );
+
+        // Patrol paths.
+        if (points == null || points.Length < 2)
+            return;
+
+        Gizmos.color = Color.cyan;
+
+        for (int i = 0; i < points.Length; i++)
         {
-            Gizmos.color = Color.cyan;
-            for (int i = 0; i < points.Length; i++)
+            if (points[i] == null)
+                continue;
+
+            Gizmos.DrawSphere(points[i].position, 0.2f);
+
+            int nextIndex = (i + 1) % points.Length;
+
+            if (mode == PatrolMode.Loop ||
+                (mode == PatrolMode.PingPong && i < points.Length - 1))
             {
-                if (points[i] != null)
+                if (points[nextIndex] != null)
                 {
-                    Gizmos.DrawSphere(points[i].position, 0.2f);
-                    Transform next = points[(i + 1) % points.Length];
-                    if (next != null && mode == PatrolMode.Loop)
-                    {
-                        Gizmos.DrawLine(points[i].position, next.position);
-                    }
+                    Gizmos.DrawLine(
+                        points[i].position,
+                        points[nextIndex].position
+                    );
                 }
             }
         }
-
-        // Draw Vision Cone & Detection Radius
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, detectionRadius);
-
-        Vector3 fovLine1 = Quaternion.AngleAxis(fieldOfViewAngle / 2, Vector3.up) * transform.forward;
-        Vector3 fovLine2 = Quaternion.AngleAxis(-fieldOfViewAngle / 2, Vector3.up) * transform.forward;
-
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawRay(transform.position, fovLine1 * detectionRadius);
-        Gizmos.DrawRay(transform.position, fovLine2 * detectionRadius);
     }
 }

@@ -7,8 +7,11 @@ public class GameManager : MonoBehaviour
 
     [Header("Score & Level Settings")]
     public int coinsCollected = 0;
-    public bool useTimer = false;
+    public bool useTimer = true;
     public float levelTimer = 60f;
+
+    [Header("Runtime Status")]
+    [SerializeField] private float currentTimer;
 
     private bool isGameOver = false;
 
@@ -18,6 +21,7 @@ public class GameManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            currentTimer = levelTimer; // Explicit initialization on start
         }
         else if (Instance != this)
         {
@@ -25,14 +29,43 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        ResetLevelState();
+    }
+
+    private void ResetLevelState()
+    {
+        coinsCollected = 0;
+        currentTimer = levelTimer;
+        isGameOver = false;
+        UpdateUI();
+    }
+
     void Update()
     {
         if (useTimer && !isGameOver)
         {
-            levelTimer -= Time.deltaTime;
-            if (levelTimer <= 0f)
+            currentTimer -= Time.deltaTime;
+
+            if (UIManager.Instance != null)
             {
-                levelTimer = 0f;
+                UIManager.Instance.UpdateTimerDisplay(currentTimer);
+            }
+
+            if (currentTimer <= 0f)
+            {
+                currentTimer = 0f;
                 PlayerDied();
             }
         }
@@ -45,40 +78,41 @@ public class GameManager : MonoBehaviour
     }
 
     public void UpdateUI()
-{
-    if (UIManager.Instance != null)
     {
-        UIManager.Instance.UpdateCoinsDisplay(coinsCollected);
-
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
-        if (player != null)
+        if (UIManager.Instance != null)
         {
-            Health playerHealth = player.GetComponent<Health>();
-            if (playerHealth != null)
+            UIManager.Instance.UpdateCoinsDisplay(coinsCollected);
+            UIManager.Instance.UpdateTimerDisplay(currentTimer);
+
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
             {
-                UIManager.Instance.UpdateHealthDisplay(playerHealth.Current);
+                Health playerHealth = player.GetComponent<Health>();
+                if (playerHealth != null)
+                {
+                    UIManager.Instance.UpdateHealthDisplay(playerHealth.Current);
+                }
             }
         }
     }
-}
 
     public void PlayerDied()
     {
         if (isGameOver) return;
         isGameOver = true;
-        Debug.Log("Player Died! Reloading scene...");
+        Debug.Log("Player Died or Time Ran Out! Reloading scene...");
         ReloadCurrentLevel();
     }
 
     public void ReloadCurrentLevel()
     {
-        isGameOver = false;
+        ResetLevelState();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public void LoadNextLevel()
     {
-        isGameOver = false;
+        ResetLevelState();
         int nextSceneIndex = SceneManager.GetActiveScene().buildIndex + 1;
         if (nextSceneIndex < SceneManager.sceneCountInBuildSettings)
         {

@@ -8,6 +8,7 @@ public class UIManager : MonoBehaviour
     [Header("TextMeshPro References")]
     public TextMeshProUGUI coinsText;
     public TextMeshProUGUI healthText;
+    public TextMeshProUGUI timerText;
 
     void Awake()
     {
@@ -23,10 +24,7 @@ public class UIManager : MonoBehaviour
 
     public void UpdateCoinsDisplay(int coinCount)
     {
-        if (coinsText != null)
-        {
-            coinsText.text = "Coins: " + coinCount;
-        }
+        if (coinsText != null) coinsText.text = "Coins: " + coinCount;
     }
 
     public void UpdateHealthDisplay(int currentHealth)
@@ -39,6 +37,15 @@ public class UIManager : MonoBehaviour
                 heartsDisplay += "♥ ";
             }
             healthText.text = "Health: " + heartsDisplay;
+        }
+    }
+
+    public void UpdateTimerDisplay(float timeRemaining)
+    {
+        if (timerText != null)
+        {
+            int seconds = Mathf.CeilToInt(timeRemaining);
+            timerText.text = "Time: " + seconds + "s";
         }
     }
 }

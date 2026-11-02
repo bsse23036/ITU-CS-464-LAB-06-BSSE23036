@@ -255,8 +255,8 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 1
-  m_Constraints: 80
-  m_CollisionDetection: 0
+  m_Constraints: 112
+  m_CollisionDetection: 1
 --- !u!195 &-6113866686826509346
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -267,7 +267,7 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: 0
   m_Radius: 0.5
-  m_Speed: 3
+  m_Speed: 5
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 120
@@ -278,7 +278,7 @@ NavMeshAgent:
   m_Height: 2
   m_BaseOffset: 1
   m_WalkableMask: 4294967295
-  m_ObstacleAvoidanceType: 4
+  m_ObstacleAvoidanceType: 3
 --- !u!114 &-3593085685262677700
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -291,11 +291,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d417740f6954abc47b73f8791f139ba9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPatrol
-  waypoints: []
+  points:
+  - {fileID: 0}
+  mode: 0
   patrolSpeed: 3.5
-  chaseSpeed: 5.5
+  waitTime: 1
+  chaseSpeed: 6
+  turnSpeed: 360
   detectionRadius: 10
   fieldOfViewAngle: 90
   obstacleMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
+  chaseMemoryDuration: 3
+  damage: 1
+  damageCooldown: 1
+  reloadLevelOnContact: 0

@@ -483,7 +483,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   coinsCollected: 0
   useTimer: 1
-  levelTimer: 90
+  levelTimer: 60
 --- !u!4 &312188304
 Transform:
   m_ObjectHideFlags: 0
